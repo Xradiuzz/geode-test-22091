@@ -1,0 +1,38 @@
+name: Build Geode TEST APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'geode-launcher-test-22091-source.zip'
+      - '.github/workflows/build-test-apk.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract source
+        run: unzip -q geode-launcher-test-22091-source.zip
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android tools
+        run: sdkmanager "ndk;30.0.16248370" "cmake;3.21.0"
+
+      - name: Build APK
+        working-directory: android-launcher-main
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleStandardRelease --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: geode-test-apk
+          path: android-launcher-main/app/build/outputs/apk/**/*.apk
