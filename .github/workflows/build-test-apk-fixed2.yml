@@ -1,0 +1,60 @@
+
+name: Build Geode TEST APK FIXED 2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'geode-launcher-test-22091-source.zip'
+      - '.github/workflows/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract source
+        run: |
+          unzip -q geode-launcher-test-22091-source.zip
+          test -d android-launcher-main
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - name: Install NDK and CMake
+        run: |
+          sdkmanager --install \
+            "ndk;30.0.16248370" \
+            "cmake;3.22.1"
+
+      - name: Build APK
+        working-directory: android-launcher-main
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleStandardRelease --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: geode-test-apk
+          path: android-launcher-main/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 7
